@@ -1,0 +1,38 @@
+﻿[
+  {
+    "KeyPath": "PowerTweaks: Open directory in Powershell",
+    "IsAdmin": false,
+    "PromptType": 1,
+    "Background": true
+  },
+  {
+    "KeyPath": "PowerTweaks: Open directory in Powershell (Administrator)",
+    "IsAdmin": true,
+    "PromptType": 1,
+    "Background": true
+  },
+  {
+    "KeyPath": "PowerTweaks: Open directory in Command Prompt",
+    "IsAdmin": false,
+    "PromptType": 0,
+    "Background": true
+  },
+  {
+    "KeyPath": "PowerTweaks: Open directory in Command Prompt (Administrator)",
+    "IsAdmin": true,
+    "PromptType": 0,
+    "Background": true
+  },
+  {
+    "Separator": true
+  },
+  {
+    "KeyPath": "PowerTweaks: Fast Delete directory",
+    "IsAdmin": false,
+    "PromptType": 2,
+    "Background": false
+  },
+  {
+    "Separator": true
+  }
+]

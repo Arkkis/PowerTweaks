@@ -1,0 +1,19 @@
+﻿<Window x:Name="AppWindow" x:Class="PowerTweaks.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PowerTweaks"
+        mc:Ignorable="d"
+        Title="PowerTweaks" Background="{DynamicResource {x:Static SystemColors.MenuBrushKey}}" UseLayoutRounding="True" ResizeMode="CanMinimize" Width="500" Height="100">
+    <Grid x:Name="ContentGrid">
+        <Grid x:Name="ButtonGrid" VerticalAlignment="Top"/>
+        <!--<Button Grid.Row="0" Content="Add &quot;Open directory in Powershell&quot;" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Click="Button_Click_Ps" FontFamily="Consolas"/>
+        <Button Grid.Row="0" Content="Add &quot;Open directory in Powershell (Administrator)&quot;" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="10,34,0,0" VerticalAlignment="Top" Click="Button_Click_PsAdmin" FontFamily="Consolas"/>
+        <Button Grid.Row="0" Content="Add &quot;Open directory in Command Prompt&quot;" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="10,58,0,0" VerticalAlignment="Top" Click="Button_Click_Cmd" FontFamily="Consolas"/>
+        <Button Grid.Row="0" Content="Add &quot;Open directory in Command Prompt (Administrator)&quot;" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="10,82,0,0" VerticalAlignment="Top" Click="Button_Click_CmdAdmin" FontFamily="Consolas"/>
+        <Button Grid.Row="0" Content="Remove all changes" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="362,119,0,0" VerticalAlignment="Top" Click="Button_Click_RemoveChanges" FontFamily="Consolas"/>
+        <Button Grid.Row="0" Content="Add everything" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="10,119,0,0" VerticalAlignment="Top" Click="Button_Click_AddAllMenus" FontFamily="Consolas"/>-->
+        <Grid x:Name="InfoGrid" VerticalAlignment="Bottom"/>
+    </Grid>
+</Window>
