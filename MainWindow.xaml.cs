@@ -14,15 +14,13 @@ namespace PowerTweaks
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
-        const string _registryDirectory = @"SOFTWARE\Classes\Directory\";
-        private readonly List<ContextItem> _items = new();
-        private int _itemIndex = 0;
-        private readonly int _buttonHeight = 25;
-        private readonly int _buttonMargin = 10;
-
-        //bool isAdmin = false;
+        private const string RegistryDirectory = @"SOFTWARE\Classes\Directory\";
+        private readonly List<ContextItem> _items;
+        private int _itemIndex;
+        private const int ButtonHeight = 25;
+        private const int ButtonMargin = 10;
 
         public MainWindow()
         {
@@ -35,22 +33,22 @@ namespace PowerTweaks
                 AddItemToGrid(item, Button_Click_AddContext);
             }
 
-            AddItemToGrid(new ContextItem { KeyPath = "Add all to context menu" }, new RoutedEventHandler((s, e) =>
+            AddItemToGrid(new ContextItem { KeyPath = "Add all to context menu"}, (_, _) =>
             {
                 AddAllMenus();
-            }));
+            });
 
-            AddItemToGrid(new ContextItem { KeyPath = "Remove all from context menu" }, new RoutedEventHandler((s, e) =>
+            AddItemToGrid(new ContextItem { KeyPath = "Remove all from context menu" }, (_, _) =>
             {
                 RemoveAllChanges();
-            }));
+            });
 
-            AddItemToGrid(new ContextItem { KeyPath = "Exit" }, new RoutedEventHandler((s, e) =>
+            AddItemToGrid(new ContextItem { KeyPath = "Exit" }, (_, _) =>
             {
                 AppWindow.Close();
-            }));
+            });
 
-            if (!IsAdmin())
+            if (!CheckAdminRights())
             {
                 MessageBox.Show("not admin");
                 //IsAdminText.Visibility = Visibility.Visible;
@@ -65,14 +63,14 @@ namespace PowerTweaks
                 return;
             }
 
-            AppWindow.Height += _buttonHeight + _buttonMargin;
+            AppWindow.Height += ButtonHeight + ButtonMargin;
 
             ButtonGrid.RowDefinitions.Add(CreateNewDefinition());
 
             var button = new Button
             {
-                Height = _buttonHeight,
-                Margin = new Thickness { Bottom = _buttonMargin },
+                Height = ButtonHeight,
+                Margin = new Thickness { Bottom = ButtonMargin },
                 Content = itemToAdd.KeyPath
             };
 
@@ -91,23 +89,33 @@ namespace PowerTweaks
             _itemIndex++;
         }
 
-        private RowDefinition CreateNewDefinition()
+        private static RowDefinition CreateNewDefinition()
         {
-            return new RowDefinition { Height = new GridLength(_buttonHeight + _buttonMargin) };
+            return new() { Height = new GridLength(ButtonHeight + ButtonMargin) };
         }
 
         private void Button_Click_AddContext(object sender, RoutedEventArgs e)
         {
-            var content = (sender as Button).Content.ToString();
+            var content = ((Button) sender).Content.ToString();
             var menuItems = JsonSerializer.Deserialize<List<ContextItem>>(File.ReadAllText("menus.json"));
+
+            if (menuItems == null)
+            {
+                throw new NullReferenceException(nameof(menuItems));
+            }
 
             AddItemToContextMenu(menuItems.FirstOrDefault(item => item.KeyPath == content));
         }
 
-        private static void AddAllMenus()
+        private void AddAllMenus()
         {
             var menuItems = JsonSerializer.Deserialize<List<ContextItem>>(File.ReadAllText("menus.json"));
 
+            if (menuItems == null)
+            {
+                throw new NullReferenceException(nameof(menuItems));
+            }
+            
             foreach (var item in menuItems)
             {
                 AddItemToContextMenu(item);
@@ -121,11 +129,11 @@ namespace PowerTweaks
 
         public class ContextItem
         {
-            public string KeyPath { get; set; }
-            public bool IsAdmin { get; set; }
-            public PromptType PromptType { get; set; }
-            public bool Background { get; set; }
-            public bool Separator { get; set; }
+            public string KeyPath { get; init; }
+            public bool IsAdmin { get; init; }
+            public PromptType PromptType { get; init; }
+            public bool Background  { get; init; }
+            public bool Separator { get; init; }
         }
 
         public enum PromptType
@@ -135,7 +143,7 @@ namespace PowerTweaks
             CommandPromptCommand = 2
         }
 
-        private static void AddItemToContextMenu(ContextItem item)
+        private void AddItemToContextMenu(ContextItem item)
         {
             _ = item ?? throw new ArgumentNullException(nameof(item));
 
@@ -145,7 +153,7 @@ namespace PowerTweaks
             }
 
             var promptPath = Environment.SystemDirectory;
-            string value, backgroundValue, baseString;
+            string baseString;
 
             static string ReplaceInString(string baseString, string variable)
             {
@@ -187,13 +195,12 @@ namespace PowerTweaks
                     return;
             }
 
-            value = ReplaceInString(baseString, "%1");
-            backgroundValue = ReplaceInString(baseString, "%W");
+            var value = ReplaceInString(baseString, "%1");
+            var backgroundValue = ReplaceInString(baseString, "%W");
 
-            var path = _registryDirectory;
-            var pathNormal = path + "shell\\" + item.KeyPath;
+            var pathNormal = RegistryDirectory + "shell\\" + item.KeyPath;
             var pathNormalCommand = pathNormal + "\\command";
-            var pathBackground = path + "Background\\shell\\" + item.KeyPath;
+            var pathBackground = RegistryDirectory + "Background\\shell\\" + item.KeyPath;
             var pathBackgroundCommand = pathBackground + "\\command";
 
             File.AppendAllText("log.txt", pathNormalCommand + Environment.NewLine + value + Environment.NewLine);
@@ -240,29 +247,40 @@ namespace PowerTweaks
                 return true;
             }
 
-            if (!RegKeyExists(path))
-            {
-                Debug.WriteLine(path);
-                Registry.CurrentUser.CreateSubKey(path);
+            if (RegKeyExists(path)) return true;
+            Debug.WriteLine(path);
+            Registry.CurrentUser.CreateSubKey(path);
 
-                if (withIcon)
-                {
-                    Registry.CurrentUser.OpenSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree).SetValue("Icon", command + ",0");
-                }
-                else
-                {
-                    Registry.CurrentUser.OpenSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree).SetValue("", command);
-                }
-
-                if (!RegKeyExists(path))
-                {
-                    return false;
-                }
-
-                return true;
-            }
+            _ = withIcon 
+                ? WriteIconRegKey(path, command) 
+                : WriteRegKey(path, command);
 
             return true;
+
+        }
+
+        private static bool WriteRegKey(string path, string value)
+        {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
+            
+            Registry.CurrentUser.OpenSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree)?.SetValue("", value);
+            
+            return RegKeyExists(path);
+        }
+        
+        private static bool WriteIconRegKey(string path, string value)
+        {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
+            
+            Registry.CurrentUser.OpenSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree)?.SetValue("Icon", value + ",0");
+            
+            return RegKeyExists(path);
         }
 
         private void RemoveAllChanges()
@@ -270,9 +288,8 @@ namespace PowerTweaks
             // Remove our keys
             foreach (var item in _items.Where(item => !string.IsNullOrEmpty(item.KeyPath)))
             {
-                var path = _registryDirectory;
-                var pathNormal = path + "shell\\" + item.KeyPath;
-                var pathBackground = path + "Background\\shell\\" + item.KeyPath;
+                var pathNormal = RegistryDirectory + "shell\\" + item.KeyPath;
+                var pathBackground = RegistryDirectory + "Background\\shell\\" + item.KeyPath;
 
                 if (RegKeyExists(pathNormal))
                 {
@@ -280,41 +297,38 @@ namespace PowerTweaks
                     Registry.CurrentUser.DeleteSubKeyTree(pathNormal);
                 }
 
-                if (RegKeyExists(pathBackground))
-                {
-                    Debug.WriteLine(pathBackground);
-                    Registry.CurrentUser.DeleteSubKeyTree(pathBackground);
-                }
+                if (!RegKeyExists(pathBackground)) continue;
+                Debug.WriteLine(pathBackground);
+                Registry.CurrentUser.DeleteSubKeyTree(pathBackground);
             }
         }
 
         private static bool RegKeyExists(string path)
         {
-            if (Registry.CurrentUser.OpenSubKey(path) == null)
-            {
-                return false;
-            }
-
-            return true;
+            return Registry.CurrentUser.OpenSubKey(path) != null;
         }
 
         private static bool RegValueExists(string path, string value)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+            
+            if (string.IsNullOrEmpty(value))
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            
             if (RegKeyExists(path))
             {
-                if (Registry.CurrentUser.OpenSubKey(path).GetValue(value) == null)
-                {
-                    return false;
-                }
-                return true;
+                return Registry.CurrentUser.OpenSubKey(path)?.GetValue(value) != null;
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
-        private static bool IsAdmin()
+        private static bool CheckAdminRights()
         {
             using var identity = WindowsIdentity.GetCurrent();
             var principal = new WindowsPrincipal(identity);
